@@ -6,9 +6,17 @@ import api from './src/services/api';
 
 export default function App() {
 
+  const [acessToken, setAcessToken] = useState('');
+
+  useEffect(() => {
+    api.get('/bank1/products').then(response => {
+      setAcessToken(response.data.access_token);
+    }).catch(err => console.log(err));
+  }, [])
+
   return (
     <View style={styles.container}>
-      <Text>Alo</Text>
+      <Text>{acessToken}</Text>
       <StatusBar style="auto" />
     </View>
   );
