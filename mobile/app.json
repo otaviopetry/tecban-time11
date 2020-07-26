@@ -16,6 +16,21 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+    "scheme": "creditai",
+    "android": {
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": {
+            "scheme": "https",
+            "host": "*.google.co.uk"          },
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
     "ios": {
       "supportsTablet": true
     },

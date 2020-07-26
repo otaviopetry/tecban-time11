@@ -24,8 +24,6 @@ const key = path.join(
   'client_private_key.key',
 );
 
-// const chain = path.join(__dirname, '..', 'certificates', 'bank1', 'chain.crt');
-
 const httpsAgent = new https.Agent({
   cert: fs.readFileSync(certificate),
   key: fs.readFileSync(key),
@@ -98,10 +96,7 @@ const getConsentId = async () => {
   }
 
   if (storedConsentId) {
-    return {
-      message: 'You already have a consent request.',
-      consentId: storedConsentId,
-    };
+    return storedConsentId;
   }
 
   const headers = {
@@ -160,7 +155,7 @@ const getConsentId = async () => {
       }
     });
 
-    return user;
+    return user.consentId;
   } catch (err) {
     console.log(err);
     return { message: err.data };
@@ -182,10 +177,7 @@ const getBankUrl = async () => {
     }
 
     if (storedBankURL) {
-      return {
-        message: 'You already have generated the URL.',
-        bankURL: storedBankURL,
-      };
+      return storedBankURL;
     }
 
     const headers = {
@@ -212,14 +204,14 @@ const getBankUrl = async () => {
       }
     });
 
-    return user;
+    return user.bankURL;
   } catch (err) {
     return { message: err.data };
   }
 };
 
 routes.get('/', (request, response) =>
-  response.json({ message: 'Hello team XYZ!' }),
+  response.json({ message: 'Hello team 11!' }),
 );
 
 routes.get('/bank1/get-token', async (request, response) => {

@@ -12,6 +12,7 @@ import RunningAlgorithm from './pages/RunningAlgorithm';
 import Dashboard from './pages/Dashboard';
 
 export default function Routes() {
+
     return (
         <NavigationContainer>
             <AppStack.Navigator screenOptions={{ headerShown: false }}>
