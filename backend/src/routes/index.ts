@@ -44,11 +44,7 @@ let token = '';
 let consentId = '';
 let bankURL = '';
 
-routes.get('/', (request, response) =>
-  response.json({ message: 'Hello team XYZ!' }),
-);
-
-routes.get('/bank1/get-token', async (request, response) => {
+const getToken = async () => {
   try {
     const headers = {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -82,23 +78,13 @@ routes.get('/bank1/get-token', async (request, response) => {
       }
     });
 
-    response.json(token);
+    return token;
   } catch (err) {
-    console.log(err);
+    return { message: err.data };
   }
-});
+};
 
-routes.get('/test', (request, response) => {
-  const rawData = fs.readFileSync(dbPath);
-
-  const user = JSON.parse(rawData);
-
-  console.log(user);
-
-  response.json(user);
-});
-
-routes.get('/bank1/create-consent-request', async (request, response) => {
+const getConsentId = async () => {
   const rawData = fs.readFileSync(dbPath);
 
   const user = JSON.parse(rawData);
@@ -108,14 +94,14 @@ routes.get('/bank1/create-consent-request', async (request, response) => {
   const storedConsentId = user.consentId;
 
   if (!storedToken) {
-    response.json({ message: 'You must have a token.' });
+    return { message: 'You must have a token.' };
   }
 
   if (storedConsentId) {
-    response.json({
+    return {
       message: 'You already have a consent request.',
       consentId: storedConsentId,
-    });
+    };
   }
 
   const headers = {
@@ -174,34 +160,34 @@ routes.get('/bank1/create-consent-request', async (request, response) => {
       }
     });
 
-    response.json(user);
+    return user;
   } catch (err) {
     console.log(err);
-    response.status(401).json(err.data);
+    return { message: err.data };
   }
-});
+};
 
-routes.get('/bank1/get-bank-url', async (request, response) => {
-  const rawData = fs.readFileSync(dbPath);
-
-  const user = JSON.parse(rawData);
-
-  const storedConsentId = user.consentId;
-
-  const storedBankURL = user.bankURL;
-
-  if (!storedConsentId) {
-    response.json({ message: 'The consent request has not been created yet.' });
-  }
-
-  if (storedBankURL) {
-    response.json({
-      message: 'You already have generated the URL.',
-      bankURL: storedBankURL,
-    });
-  }
-
+const getBankUrl = async () => {
   try {
+    const rawData = fs.readFileSync(dbPath);
+
+    const user = JSON.parse(rawData);
+
+    const storedConsentId = user.consentId;
+
+    const storedBankURL = user.bankURL;
+
+    if (!storedConsentId) {
+      return { message: 'The consent request has not been created yet.' };
+    }
+
+    if (storedBankURL) {
+      return {
+        message: 'You already have generated the URL.',
+        bankURL: storedBankURL,
+      };
+    }
+
     const headers = {
       Authorization:
         'Basic NjJmZDVlNTMtNTkzMC00NjJlLTg5M2ItOTU4ZWEwZTQzMzZjOjcyMTY0MzJmLTQxZTYtNGQ2OS04Y2QwLTVmNzIxZWFmMTUwYw==',
@@ -226,9 +212,57 @@ routes.get('/bank1/get-bank-url', async (request, response) => {
       }
     });
 
-    response.json(user);
+    return user;
   } catch (err) {
-    response.json({ message: err.data });
+    return { message: err.data };
+  }
+};
+
+routes.get('/', (request, response) =>
+  response.json({ message: 'Hello team XYZ!' }),
+);
+
+routes.get('/bank1/get-token', async (request, response) => {
+  try {
+    const theToken = await getToken();
+
+    response.json(theToken);
+  } catch (err) {
+    response.json({
+      message: err.data,
+    });
+  }
+});
+
+routes.get('/test', (request, response) => {
+  const rawData = fs.readFileSync(dbPath);
+
+  const user = JSON.parse(rawData);
+
+  console.log(user);
+
+  response.json(user);
+});
+
+routes.get('/bank1/create-consent-request', async (request, response) => {
+  try {
+    const theConsentId = await getConsentId();
+
+    response.json(theConsentId);
+  } catch (err) {
+    response.json({
+      message: err.data,
+    });
+  }
+});
+
+routes.get('/bank1/get-bank-url', async (request, response) => {
+  try {
+    const theURL = await getBankUrl();
+
+    response.json(theURL);
+  } catch (err) {
+    response.json({ message: err });
   }
 });
 
