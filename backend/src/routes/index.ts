@@ -32,6 +32,14 @@ const httpsAgent = new https.Agent({
   rejectUnauthorized: false,
 });
 
+const userData = {
+  bearerToken: '',
+  consentId: '',
+  bankURL: '',
+};
+
+const dbPath = path.join(__dirname, '..', 'database', 'db.json');
+
 let token = '';
 let consentId = '';
 let bankURL = '';
@@ -62,7 +70,17 @@ routes.get('/bank1/get-token', async (request, response) => {
 
     token = result.data.access_token;
 
-    console.log(token);
+    userData.bearerToken = token;
+
+    const stringData = JSON.stringify(userData);
+
+    fs.writeFile(dbPath, stringData, 'utf8', err => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log('File saved!');
+      }
+    });
 
     response.json(token);
   } catch (err) {
@@ -70,13 +88,41 @@ routes.get('/bank1/get-token', async (request, response) => {
   }
 });
 
+routes.get('/test', (request, response) => {
+  const rawData = fs.readFileSync(dbPath);
+
+  const user = JSON.parse(rawData);
+
+  console.log(user);
+
+  response.json(user);
+});
+
 routes.get('/bank1/create-consent-request', async (request, response) => {
-  console.log(token);
+  const rawData = fs.readFileSync(dbPath);
+
+  const user = JSON.parse(rawData);
+
+  const storedToken = user.bearerToken;
+
+  const storedConsentId = user.consentId;
+
+  if (!storedToken) {
+    response.json({ message: 'You must have a token.' });
+  }
+
+  if (storedConsentId) {
+    response.json({
+      message: 'You already have a consent request.',
+      consentId: storedConsentId,
+    });
+  }
+
   const headers = {
     'Content-Type': 'application/json',
     'x-fapi-financial-id': 'c3c937c4-ab71-427f-9b59-4099b7c680ab',
     'x-fapi-interaction-id': uuid(),
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${storedToken}`,
   };
 
   const body = {
@@ -116,9 +162,19 @@ routes.get('/bank1/create-consent-request', async (request, response) => {
 
     consentId = result.data.Data.ConsentId;
 
-    console.log(consentId);
+    user.consentId = consentId;
 
-    response.json({ consentId: result.data.Data.ConsentId });
+    const stringData = JSON.stringify(user);
+
+    fs.writeFile(dbPath, stringData, 'utf8', err => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log('File saved.');
+      }
+    });
+
+    response.json(user);
   } catch (err) {
     console.log(err);
     response.status(401).json(err.data);
@@ -126,7 +182,25 @@ routes.get('/bank1/create-consent-request', async (request, response) => {
 });
 
 routes.get('/bank1/get-bank-url', async (request, response) => {
-  console.log(consentId);
+  const rawData = fs.readFileSync(dbPath);
+
+  const user = JSON.parse(rawData);
+
+  const storedConsentId = user.consentId;
+
+  const storedBankURL = user.bankURL;
+
+  if (!storedConsentId) {
+    response.json({ message: 'The consent request has not been created yet.' });
+  }
+
+  if (storedBankURL) {
+    response.json({
+      message: 'You already have generated the URL.',
+      bankURL: storedBankURL,
+    });
+  }
+
   try {
     const headers = {
       Authorization:
@@ -134,13 +208,25 @@ routes.get('/bank1/get-bank-url', async (request, response) => {
     };
 
     const result = await axios.get(
-      `https://rs1.tecban-sandbox.o3bank.co.uk/ozone/v1.0/auth-code-url/${consentId}?scope=accounts&alg=none`,
+      `https://rs1.tecban-sandbox.o3bank.co.uk/ozone/v1.0/auth-code-url/${storedConsentId}?scope=accounts&alg=none`,
       { headers, httpsAgent },
     );
 
     bankURL = result.data;
 
-    response.json(bankURL);
+    user.bankURL = bankURL;
+
+    const stringData = JSON.stringify(user);
+
+    fs.writeFile(dbPath, stringData, 'utf8', err => {
+      if (err) {
+        console.log(err);
+      } else {
+        console.log('File saved!');
+      }
+    });
+
+    response.json(user);
   } catch (err) {
     response.json({ message: err.data });
   }
