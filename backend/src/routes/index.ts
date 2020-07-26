@@ -33,6 +33,8 @@ const httpsAgent = new https.Agent({
 });
 
 let token = '';
+let consentId = '';
+let bankURL = '';
 
 routes.get('/', (request, response) =>
   response.json({ message: 'Hello team XYZ!' }),
@@ -44,7 +46,7 @@ routes.get('/bank1/get-token', async (request, response) => {
       'Content-Type': 'application/x-www-form-urlencoded',
       Accept: 'application/json',
       Authorization:
-        'Basic MzM0ZGExNjUtNzc5OS00ZTZiLTgxYmEtNmU0NjMxYzJmM2Y5OjIyOTM4NDRlLTcxZDgtNDBjYS1iZGRhLTEyYjA4YzUzMGJhNw==',
+        'Basic NjJmZDVlNTMtNTkzMC00NjJlLTg5M2ItOTU4ZWEwZTQzMzZjOjcyMTY0MzJmLTQxZTYtNGQ2OS04Y2QwLTVmNzIxZWFmMTUwYw==',
     };
 
     const body = {
@@ -60,68 +62,87 @@ routes.get('/bank1/get-token', async (request, response) => {
 
     token = result.data.access_token;
 
+    console.log(token);
+
     response.json(token);
   } catch (err) {
     console.log(err);
   }
 });
 
-routes.get('/create-consent-request', async (request, response) => {
+routes.get('/bank1/create-consent-request', async (request, response) => {
   console.log(token);
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-fapi-financial-id': 'c3c937c4-ab71-427f-9b59-4099b7c680ab',
+    'x-fapi-interaction-id': uuid(),
+    Authorization: `Bearer ${token}`,
+  };
 
-  if (token !== '') {
+  const body = {
+    Data: {
+      Permissions: [
+        'ReadAccountsBasic',
+        'ReadAccountsDetail',
+        'ReadBalances',
+        'ReadBeneficiariesBasic',
+        'ReadBeneficiariesDetail',
+        'ReadDirectDebits',
+        'ReadTransactionsBasic',
+        'ReadTransactionsCredits',
+        'ReadTransactionsDebits',
+        'ReadTransactionsDetail',
+        'ReadProducts',
+        'ReadStandingOrdersDetail',
+        'ReadProducts',
+        'ReadStandingOrdersDetail',
+        'ReadStatementsDetail',
+        'ReadParty',
+        'ReadOffers',
+        'ReadScheduledPaymentsBasic',
+        'ReadScheduledPaymentsDetail',
+        'ReadPartyPSU',
+      ],
+    },
+    Risk: {},
+  };
+
+  try {
+    const result = await axios.post(
+      'https://rs1.tecban-sandbox.o3bank.co.uk/open-banking/v3.1/aisp/account-access-consents',
+      body,
+      { headers, httpsAgent },
+    );
+
+    consentId = result.data.Data.ConsentId;
+
+    console.log(consentId);
+
+    response.json({ consentId: result.data.Data.ConsentId });
+  } catch (err) {
+    console.log(err);
+    response.status(401).json(err.data);
+  }
+});
+
+routes.get('/bank1/get-bank-url', async (request, response) => {
+  console.log(consentId);
+  try {
     const headers = {
-      'Content-Type': 'application/json',
-      'x-fapi-financial-id': 'c3c937c4-ab71-427f-9b59-4099b7c680ab',
-      'x-fapi-interaction-id': uuid(),
-      Authorization: `Bearer ${token}`,
+      Authorization:
+        'Basic NjJmZDVlNTMtNTkzMC00NjJlLTg5M2ItOTU4ZWEwZTQzMzZjOjcyMTY0MzJmLTQxZTYtNGQ2OS04Y2QwLTVmNzIxZWFmMTUwYw==',
     };
 
-    console.log(headers);
+    const result = await axios.get(
+      `https://rs1.tecban-sandbox.o3bank.co.uk/ozone/v1.0/auth-code-url/${consentId}?scope=accounts&alg=none`,
+      { headers, httpsAgent },
+    );
 
-    const body = {
-      Data: {
-        Permissions: [
-          'ReadAccountsBasic',
-          'ReadAccountsDetail',
-          'ReadBalances',
-          'ReadBeneficiariesBasic',
-          'ReadBeneficiariesDetail',
-          'ReadDirectDebits',
-          'ReadTransactionsBasic',
-          'ReadTransactionsCredits',
-          'ReadTransactionsDebits',
-          'ReadTransactionsDetail',
-          'ReadProducts',
-          'ReadStandingOrdersDetail',
-          'ReadProducts',
-          'ReadStandingOrdersDetail',
-          'ReadStatementsDetail',
-          'ReadParty',
-          'ReadOffers',
-          'ReadScheduledPaymentsBasic',
-          'ReadScheduledPaymentsDetail',
-          'ReadPartyPSU',
-        ],
-      },
-      Risk: {},
-    };
+    bankURL = result.data;
 
-    try {
-      const result = await axios.post(
-        'https://rs1.tecban-sandbox.o3bank.co.uk/open-banking/v3.1/aisp/account-access-consents',
-        body,
-        { headers, httpsAgent },
-      );
-
-      console.log(result.data.data);
-      response.json(result.data.data);
-    } catch (err) {
-      console.log(err);
-      response.status(401).json(err.data);
-    }
-  } else {
-    response.json({ message: 'You must have a token.' });
+    response.json(bankURL);
+  } catch (err) {
+    response.json({ message: err.data });
   }
 });
 
