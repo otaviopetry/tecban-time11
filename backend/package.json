@@ -10,7 +10,7 @@
   "dependencies": {
     "axios": "^0.19.2",
     "express": "^4.17.1",
-    "qs": "^6.9.4",
+    "qs": "^6.9.7",
     "uuidv4": "^6.2.0"
   },
   "devDependencies": {
